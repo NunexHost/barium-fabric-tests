@@ -8,7 +8,6 @@ import net.minecraft.client.render.RenderLayer;
 public abstract class RenderLayerMixin {
 
     // Exemplo: Uso de um accessor para um recurso estático
-    @Accessor("field_24063")
     private static RenderLayer[] getLayers() {
         // Implementação otimizada para obter as camadas de renderização
         return RenderLayer.field_24063;
