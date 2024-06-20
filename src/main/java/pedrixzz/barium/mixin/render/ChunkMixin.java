@@ -1,42 +1,58 @@
 package pedrixzz.barium.mixin.render;
 
-import net.minecraft.world.Chunk;
-import net.minecraft.world.BlockState;
+import com.google.common.collect.Maps;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.minecraft.world.lighting.LevelLightProcessor;
-import org.spongepoweredmc.mixin.Mixin;
-import org.spongepoweredmc.mixin.Overwrite;
-import org.spongepoweredmc.mixin.injection.At;
-import org.spongepoweredmc.mixin.injection.ModifyConstant;
-import org.spongepoweredmc.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+
+import java.util.Map;
 
 @Mixin(Chunk.class)
 public abstract class ChunkMixin {
 
-    @Overwrite
-    public void tick() {
-        super.tick();
+    @Shadow protected abstract Map<BlockPos, BlockEntity> getBlockEntities();
 
-        // Cache frequently accessed data
-        BlockPos pos = this.getPos();
-        int x = pos.getX();
-        int z = pos.getZ();
+    private Map<BlockPos, BlockEntity> optimizedBlockEntities = null;
 
-        // Avoid unnecessary calculations
-        for (int y = 0; y < 16; y++) {
-            for (int dx = -5; dx <= 5; dx++) {
-                for (int dz = -5; dz <= 5; dz++) {
-                    BlockPos otherPos = new BlockPos(x + dx, y, z + dz);
-                    Chunk otherChunk = this.world.getChunk(otherPos);
-
-                    // Update light levels
-                    this.world.getLightingProvider().getLightLevel(otherPos);
-
-                    // Update block states
-                    otherChunk.getBlockState(otherPos);
-                }
+    /**
+     * Otimiza o carregamento da Chunk.
+     * Substitui o construtor original para inicializar de forma mais eficiente.
+     */
+    public ChunkMixin(ChunkPos pos, UpgradeData upgradeData, HeightLimitView heightLimitView,
+                      Registry<Biome> biomeRegistry, long inhabitedTime,
+                      @Nullable ChunkSection[] sectionArray, @Nullable BlendingData blendingData) {
+        this.pos = pos;
+        this.upgradeData = upgradeData;
+        this.heightLimitView = heightLimitView;
+        this.sectionArray = new ChunkSection[heightLimitView.countVerticalSections()];
+        this.inhabitedTime = inhabitedTime;
+        this.postProcessingLists = new ShortList[heightLimitView.countVerticalSections()];
+        this.blendingData = blendingData;
+        this.chunkSkyLight = new ChunkSkyLight(heightLimitView);
+        if (sectionArray != null) {
+            if (this.sectionArray.length == sectionArray.length) {
+                System.arraycopy(sectionArray, 0, this.sectionArray, 0, this.sectionArray.length);
+            } else {
+                LOGGER.warn("Could not set level chunk sections, array length is {} instead of {}", sectionArray.length, this.sectionArray.length);
             }
         }
+
+        fillSectionArray(biomeRegistry, this.sectionArray);
+        optimizeBlockEntities(); // Nova função para otimizar o acesso às entidades de bloco
+    }
+
+    /**
+     * Otimiza o acesso às entidades de bloco ao criar uma cópia local.
+     */
+    private void optimizeBlockEntities() {
+        this.optimizedBlockEntities = Maps.newHashMap(this.getBlockEntities());
+    }
+
+    /**
+     * Substitui o método original getBlockEntity para utilizar a cópia otimizada.
+     */
+    public BlockEntity getBlockEntity(BlockPos pos) {
+        return this.optimizedBlockEntities.get(pos);
     }
 }
