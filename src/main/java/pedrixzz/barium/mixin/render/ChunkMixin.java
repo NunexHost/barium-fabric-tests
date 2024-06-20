@@ -1,58 +1,129 @@
 package pedrixzz.barium.mixin.render;
 
-import com.google.common.collect.Maps;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Interface;
 import org.spongepowered.asm.mixin.Shadow;
-
-import java.util.Map;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkSection;
+import net.minecraft.world.chunk.light.ChunkSkyLight;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.HeightLimitView;
+import net.minecraft.world.biome.source.BiomeSupplier;
+import net.minecraft.world.biome.source.BiomeAccess;
+import net.minecraft.world.biome.source.BiomeCoords;
+import net.minecraft.world.gen.chunk.ChunkNoiseSampler;
+import net.minecraft.world.gen.chunk.BlendingData;
+import net.minecraft.world.gen.structure.StructureStart;
+import it.unimi.dsi.fastutil.shorts.ShortList;
+import net.minecraft.util.crash.CrashReport;
 
 @Mixin(Chunk.class)
-public abstract class ChunkMixin {
+public class ChunkMixin implements ChunkMixinInterface {
 
-    @Shadow protected abstract Map<BlockPos, BlockEntity> getBlockEntities();
+    @Shadow
+    protected volatile boolean needsSaving;
 
-    private Map<BlockPos, BlockEntity> optimizedBlockEntities = null;
+    @Shadow
+    protected final ChunkPos pos;
 
-    /**
-     * Otimiza o carregamento da Chunk.
-     * Substitui o construtor original para inicializar de forma mais eficiente.
-     */
-    public ChunkMixin(ChunkPos pos, UpgradeData upgradeData, HeightLimitView heightLimitView,
-                      Registry<Biome> biomeRegistry, long inhabitedTime,
-                      @Nullable ChunkSection[] sectionArray, @Nullable BlendingData blendingData) {
-        this.pos = pos;
-        this.upgradeData = upgradeData;
-        this.heightLimitView = heightLimitView;
-        this.sectionArray = new ChunkSection[heightLimitView.countVerticalSections()];
-        this.inhabitedTime = inhabitedTime;
-        this.postProcessingLists = new ShortList[heightLimitView.countVerticalSections()];
-        this.blendingData = blendingData;
-        this.chunkSkyLight = new ChunkSkyLight(heightLimitView);
-        if (sectionArray != null) {
-            if (this.sectionArray.length == sectionArray.length) {
-                System.arraycopy(sectionArray, 0, this.sectionArray, 0, this.sectionArray.length);
-            } else {
-                LOGGER.warn("Could not set level chunk sections, array length is {} instead of {}", sectionArray.length, this.sectionArray.length);
-            }
-        }
+    @Shadow
+    protected final ChunkSection[] sectionArray;
 
-        fillSectionArray(biomeRegistry, this.sectionArray);
-        optimizeBlockEntities(); // Nova função para otimizar o acesso às entidades de bloco
+    @Shadow
+    protected final Map<Heightmap.Type, Heightmap> heightmaps;
+
+    @Shadow
+    protected final ChunkSkyLight chunkSkyLight;
+
+    @Shadow
+    protected final Map<Structure, StructureStart> structureStarts;
+
+    @Shadow
+    protected final Map<Structure, LongSet> structureReferences;
+
+    @Shadow
+    protected final Map<BlockPos, NbtCompound> blockEntityNbts;
+
+    @Shadow
+    protected final Map<BlockPos, BlockEntity> blockEntities;
+
+    @Shadow
+    protected final UpgradeData upgradeData;
+
+    @Shadow
+    protected BlendingData blendingData;
+
+    @Shadow
+    protected long inhabitedTime;
+
+    @Override
+    public void addStructureReference(Structure structure, long reference) {
+        this.structureReferences.computeIfAbsent(structure, s -> new LongOpenHashSet()).add(reference);
+        this.needsSaving = true;
     }
 
-    /**
-     * Otimiza o acesso às entidades de bloco ao criar uma cópia local.
-     */
-    private void optimizeBlockEntities() {
-        this.optimizedBlockEntities = Maps.newHashMap(this.getBlockEntities());
+    @Override
+    public void setStructureReferences(Map<Structure, LongSet> structureReferences) {
+        this.structureReferences.clear();
+        this.structureReferences.putAll(structureReferences);
+        this.needsSaving = true;
     }
 
-    /**
-     * Substitui o método original getBlockEntity para utilizar a cópia otimizada.
-     */
-    public BlockEntity getBlockEntity(BlockPos pos) {
-        return this.optimizedBlockEntities.get(pos);
+    @Override
+    public boolean needsSaving() {
+        return this.needsSaving;
     }
+
+    @Override
+    public void setNeedsSaving(boolean needsSaving) {
+        this.needsSaving = needsSaving;
+    }
+
+    @Override
+    public ChunkPos getPos() {
+        return this.pos;
+    }
+
+    @Override
+    public ChunkSection getSection(int yIndex) {
+        return this.sectionArray[yIndex];
+    }
+
+    @Override
+    public int sectionCoordToIndex(int coord) {
+        return coord >> 4;
+    }
+
+    @Override
+    public int getTopY() {
+        return this.heightLimitView.getHeight();
+    }
+
+    @Override
+    public int getBottomY() {
+        return this.heightLimitView.getBottomY();
+    }
+
+    @Override
+    public HeightLimitView getHeightLimitView() {
+        return this.heightLimitView;
+    }
+
+    @Override
+    public LongSet getStructureReferences(Structure structure) {
+        return this.structureReferences.getOrDefault(structure, EMPTY_STRUCTURE_REFERENCES);
+    }
+
+    @Override
+    public void setLightOn(boolean lightOn) {
+        this.lightOn = lightOn;
+        this.needsSaving = true;
+    }
+
+    @Override
+    public boolean isLightOn() {
+        return this.lightOn;
+    }
+
+    // Outros métodos conforme necessário...
 }
