@@ -9,7 +9,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.render.chunk.ChunkBuilder;
-import net.minecraft.client.render.chunk.ChunkRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -25,7 +24,7 @@ public class MinecraftRender {
     private static final int RENDER_DISTANCE = 10; // Distância de renderização
 
     private final Set<ChunkPos> renderedChunks = Sets.newHashSet();
-    private final Map<ChunkPos, ChunkRenderer> chunkRenderers = Maps.newHashMap();
+    private final Map<ChunkPos, ChunkBuilder> chunkBuilders = Maps.newHashMap();
 
     public void renderWorld(MatrixStack matrices, float tickDelta) {
         World world = CLIENT.world;
@@ -69,12 +68,18 @@ public class MinecraftRender {
         ChunkBuilder chunkBuilder = CLIENT.world.getChunkManager().getChunkBuilder(chunkPos.x, chunkPos.z);
         if (chunkBuilder == null) return;
 
-        // Obtém ou cria um renderizador de chunk
-        ChunkRenderer chunkRenderer = chunkRenderers.getOrDefault(chunkPos, new ChunkRenderer(chunkBuilder));
-        chunkRenderers.put(chunkPos, chunkRenderer);
+        // Adiciona o ChunkBuilder ao mapa
+        chunkBuilders.put(chunkPos, chunkBuilder);
 
         // Renderiza o chunk
-        chunkRenderer.render(matrices, tickDelta);
+        renderChunk(matrices, chunkBuilder, tickDelta);
         renderedChunks.add(chunkPos);
+    }
+
+    // Método para renderizar o chunk usando WorldRenderer
+    private void renderChunk(MatrixStack matrices, ChunkBuilder chunkBuilder, float tickDelta) {
+        World world = CLIENT.world;
+        VertexConsumerProvider.Immediate immediate = CLIENT.getBufferBuilders().getEntityVertexConsumers();
+        WorldRenderer.renderChunk(world, matrices, immediate, chunkBuilder, tickDelta, false, false, false);
     }
 }
