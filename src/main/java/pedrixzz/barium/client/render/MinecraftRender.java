@@ -15,6 +15,7 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 
 import java.util.*;
 
@@ -65,7 +66,11 @@ public class MinecraftRender {
         if (renderedChunks.contains(chunkPos)) return;
 
         // Obtém o chunk do mundo
-        ChunkBuilder chunkBuilder = CLIENT.world.getChunkManager().getChunkBuilder(chunkPos.x, chunkPos.z);
+        Chunk chunk = CLIENT.world.getChunkManager().getChunk(chunkPos.x, chunkPos.z);
+        if (chunk == null) return;
+
+        // Obtém o ChunkBuilder
+        ChunkBuilder chunkBuilder = chunk.getChunkBuilder();
         if (chunkBuilder == null) return;
 
         // Adiciona o ChunkBuilder ao mapa
@@ -76,10 +81,10 @@ public class MinecraftRender {
         renderedChunks.add(chunkPos);
     }
 
-    // Método para renderizar o chunk usando WorldRenderer
+    // Método para renderizar o chunk usando ChunkBuilder
     private void renderChunk(MatrixStack matrices, ChunkBuilder chunkBuilder, float tickDelta) {
         World world = CLIENT.world;
         VertexConsumerProvider.Immediate immediate = CLIENT.getBufferBuilders().getEntityVertexConsumers();
-        WorldRenderer.renderChunk(world, matrices, immediate, chunkBuilder, tickDelta, false, false, false);
+        chunkBuilder.render(matrices, tickDelta, immediate, true);
     }
 }
