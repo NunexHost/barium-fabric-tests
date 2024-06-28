@@ -5,12 +5,15 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 import net.minecraft.world.event.GameEvent;
 import net.minecraft.world.event.listener.GameEventListener;
+import net.minecraft.world.event.listener.WorldEventListener;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class RenderOtimize {
 
@@ -19,30 +22,33 @@ public class RenderOtimize {
 
     @Override
     public void onInitializeClient() {
-        // Registra um listener para descarregar as texturas quando o jogador se mover
-        MinecraftClient.getInstance().world.getEventManager().register(World.class, new GameEventListener() {
+        MinecraftClient minecraftClient = MinecraftClient.getInstance();
+        minecraftClient.world.getEventManager().register(World.class, new WorldEventListener() {
             @Override
-            public void onEvent(World world, GameEvent event) {
-                if (event == GameEvent.PLAYER_MOVE) {
-                    unloadTextures(world);
-                    loadTextures(world);
-                }
+            public void onPlayerMove(World world, double x, double y, double z) {
+                unloadTextures(world);
+                loadTextures(world);
             }
         });
     }
 
     public static void loadTextures(World world) {
         if (world == null) return;
-        int playerX = (int) world.getPlayer().getX();
-        int playerZ = (int) world.getPlayer().getZ();
+
+        // Use o jogador atual
+        int playerX = (int) world.getCameras().iterator().next().getPos().x;
+        int playerZ = (int) world.getCameras().iterator().next().getPos().z;
 
         for (int x = playerX - renderDistance; x <= playerX + renderDistance; x++) {
             for (int z = playerZ - renderDistance; z <= playerZ + renderDistance; z++) {
-                Block block = world.getBlockAt(x, 0, z);
-                Identifier textureName = block.getRegistryEntry().getKey();
-                if (!loadedTextures.containsKey(textureName)) {
-                    SpriteAtlasTexture texture = new SpriteAtlasTexture(textureName);
-                    loadedTextures.put(textureName, texture);
+                // Pega o bloco na posição
+                Optional<Block> block = world.getBlockState(new net.minecraft.util.math.BlockPos(x, 0, z)).getBlock();
+                if (block.isPresent()) {
+                    Identifier textureName = Registry.BLOCK.getId(block.get());
+                    if (!loadedTextures.containsKey(textureName)) {
+                        SpriteAtlasTexture texture = new SpriteAtlasTexture(textureName);
+                        loadedTextures.put(textureName, texture);
+                    }
                 }
             }
         }
@@ -50,14 +56,20 @@ public class RenderOtimize {
 
     public static void unloadTextures(World world) {
         if (world == null) return;
-        int playerX = (int) world.getPlayer().getX();
-        int playerZ = (int) world.getPlayer().getZ();
+
+        // Use o jogador atual
+        int playerX = (int) world.getCameras().iterator().next().getPos().x;
+        int playerZ = (int) world.getCameras().iterator().next().getPos().z;
+
         for (int x = playerX - renderDistance; x <= playerX + renderDistance; x++) {
             for (int z = playerZ - renderDistance; z <= playerZ + renderDistance; z++) {
-                Block block = world.getBlockAt(x, 0, z);
-                Identifier textureName = block.getRegistryEntry().getKey();
-                if (loadedTextures.containsKey(textureName)) {
-                    loadedTextures.remove(textureName);
+                // Pega o bloco na posição
+                Optional<Block> block = world.getBlockState(new net.minecraft.util.math.BlockPos(x, 0, z)).getBlock();
+                if (block.isPresent()) {
+                    Identifier textureName = Registry.BLOCK.getId(block.get());
+                    if (loadedTextures.containsKey(textureName)) {
+                        loadedTextures.remove(textureName);
+                    }
                 }
             }
         }
