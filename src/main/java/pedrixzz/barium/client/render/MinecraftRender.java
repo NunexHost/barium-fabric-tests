@@ -16,6 +16,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.light.LightSourceView;
 
 import java.util.*;
 
@@ -65,26 +66,25 @@ public class MinecraftRender {
     private void renderChunk(MatrixStack matrices, ChunkPos chunkPos, float tickDelta) {
         if (renderedChunks.contains(chunkPos)) return;
 
-        // Obtém o chunk do mundo
-        Chunk chunk = CLIENT.world.getChunkManager().getChunk(chunkPos.x, chunkPos.z);
-        if (chunk == null) return;
-
         // Obtém o ChunkBuilder
-        ChunkBuilder chunkBuilder = chunk.getChunkBuilder();
+        ChunkBuilder chunkBuilder = CLIENT.world.getChunkManager().getChunkBuilder(chunkPos.x, chunkPos.z);
         if (chunkBuilder == null) return;
 
         // Adiciona o ChunkBuilder ao mapa
         chunkBuilders.put(chunkPos, chunkBuilder);
 
+        // Obtém a LightSourceView
+        LightSourceView lightSourceView = chunkBuilder.getLightSourceView();
+
         // Renderiza o chunk
-        renderChunk(matrices, chunkBuilder, tickDelta);
+        renderChunk(matrices, lightSourceView, tickDelta);
         renderedChunks.add(chunkPos);
     }
 
-    // Método para renderizar o chunk usando ChunkBuilder
-    private void renderChunk(MatrixStack matrices, ChunkBuilder chunkBuilder, float tickDelta) {
+    // Método para renderizar o chunk usando WorldRenderer
+    private void renderChunk(MatrixStack matrices, LightSourceView lightSourceView, float tickDelta) {
         World world = CLIENT.world;
         VertexConsumerProvider.Immediate immediate = CLIENT.getBufferBuilders().getEntityVertexConsumers();
-        chunkBuilder.render(matrices, tickDelta, immediate, true);
+        WorldRenderer.renderChunk(world, matrices, immediate, lightSourceView, tickDelta, false, false, false);
     }
 }
