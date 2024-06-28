@@ -26,7 +26,7 @@ public class MinecraftRender {
     private static final int RENDER_DISTANCE = 10; // Distância de renderização
 
     private final Set<ChunkPos> renderedChunks = Sets.newHashSet();
-    private final Map<ChunkPos, Chunk> chunks = Maps.newHashMap(); 
+    private final Map<ChunkPos, ChunkBuilder> chunkBuilders = Maps.newHashMap(); 
 
     public void renderWorld(MatrixStack matrices, float tickDelta) {
         World world = CLIENT.world;
@@ -66,22 +66,25 @@ public class MinecraftRender {
     private void renderChunk(MatrixStack matrices, ChunkPos chunkPos, float tickDelta) {
         if (renderedChunks.contains(chunkPos)) return;
 
-        // Obtém o Chunk do mundo
-        Chunk chunk = CLIENT.world.getChunkManager().getChunk(chunkPos.x, chunkPos.z);
-        if (chunk == null) return;
+        // Obtém o ChunkBuilder
+        ChunkBuilder chunkBuilder = CLIENT.world.getChunkManager().getChunkBuilder(chunkPos.x, chunkPos.z);
+        if (chunkBuilder == null) return;
 
-        // Adiciona o Chunk ao mapa
-        chunks.put(chunkPos, chunk);
+        // Adiciona o ChunkBuilder ao mapa
+        chunkBuilders.put(chunkPos, chunkBuilder);
+
+        // Obtém a LightSourceView
+        LightSourceView lightSourceView = chunkBuilder.getLightSourceView();
 
         // Renderiza o chunk
-        renderChunk(matrices, chunk, tickDelta);
+        renderChunk(matrices, lightSourceView, tickDelta);
         renderedChunks.add(chunkPos);
     }
 
     // Método para renderizar o chunk usando WorldRenderer
-    private void renderChunk(MatrixStack matrices, Chunk chunk, float tickDelta) {
+    private void renderChunk(MatrixStack matrices, LightSourceView lightSourceView, float tickDelta) {
         World world = CLIENT.world;
         VertexConsumerProvider.Immediate immediate = CLIENT.getBufferBuilders().getEntityVertexConsumers();
-        WorldRenderer.renderChunk(world, matrices, immediate, chunk, tickDelta, false, false, false);
+        WorldRenderer.renderChunk(world, matrices, immediate, lightSourceView, tickDelta, false, false, false);
     }
 }
