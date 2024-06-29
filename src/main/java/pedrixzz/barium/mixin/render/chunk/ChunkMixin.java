@@ -1,4 +1,4 @@
-package pedrixzz.barium.mixin,render.chunk;
+package pedrixzz.barium.mixin.render.chunk;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
