@@ -13,7 +13,7 @@ import net.minecraft.world.chunk.Chunk;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ChunkOptimizer implements ModInitializer {
+public class BariumClient implements ModInitializer {
 
     private static final int CHUNK_LOADING_DISTANCE = 10; // Distância de carregamento
     private static final int PRE_GENERATION_RADIUS = 5; // Raio de pré-geração
