@@ -25,7 +25,7 @@ public abstract class ChunkMixin {
 
     /**
      * Injeta o código para otimizar o Chunk.setBlockState
-     * 
+     *
      * @param pos  Posição do bloco a ser modificado
      * @param state Novo estado do bloco
      * @param ci   CallbackInfo
@@ -38,7 +38,7 @@ public abstract class ChunkMixin {
 
     /**
      * Injeta o código para otimizar o Chunk.markDirty
-     * 
+     *
      * @param ci   CallbackInfo
      */
     @Inject(method = "markDirty", at = @At("TAIL"))
@@ -54,7 +54,7 @@ public abstract class ChunkMixin {
                     // Verifica se o bloco está acima do nível do mar
                     if (pos.getY() >= height) {
                         // Atualiza o WorldChunk com o novo estado do bloco
-                        worldChunk.setBlockState(pos, worldChunk.getBlockState(pos), 0);
+                        worldChunk.setBlockState(pos, worldChunk.getBlockState(pos), true); // Corrigido!
                     }
                 }
             }
