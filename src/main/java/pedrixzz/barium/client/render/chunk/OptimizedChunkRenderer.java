@@ -18,10 +18,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.BitSet;
 
-import net.fabricmc.sodium.render.pipeline.VertexBuffers; // Assuming Sodium's class
-import net.fabricmc.sodium.render.pipeline.VertexFormat;
-
-public class OptimizedChunkRenderer extends ChunkRenderer {
+public class OptimizedChunkRenderer {
 
     private static final int MAX_VERTICES_PER_CHUNK = 100000; // Adjust based on your hardware
 
