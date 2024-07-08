@@ -21,22 +21,21 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 
 @Environment(EnvType.CLIENT)
-public class OptimizedChunkRenderer extends ChunkRenderer {
+public class OptimizedChunkRenderer {
 
     private final BlockRenderManager blockRenderManager;
 
-    // BufferBuilder for each render layer
+    // BufferBuilder para cada camada de renderização
     private final BufferBuilder[] bufferBuilders;
 
-    // Reuse matrices for each render layer
+    // Reuse matrices para cada camada de renderização
     private final MatrixStack[] matrixStacks;
 
-    // Pre-allocated arrays for efficient vertex data storage
+    // Pre-allocated arrays para eficiente vertex data storage
     private final float[][][] vertexData;
     private final int[][][] vertexCountData;
 
     public OptimizedChunkRenderer(BlockRenderManager blockRenderManager) {
-        super(blockRenderManager);
         this.blockRenderManager = blockRenderManager;
 
         // Initialize buffer builders and matrix stacks for each render layer
@@ -52,7 +51,6 @@ public class OptimizedChunkRenderer extends ChunkRenderer {
         this.vertexCountData = new int[RenderLayer.getLayers().size()][16][16];
     }
 
-    @Override
     public void renderChunk(Camera camera, VertexConsumerProvider vertexConsumerProvider, Chunk chunk, boolean hasTransparency) {
         // Early out if the chunk is not loaded or has no blocks
         if (!chunk.isLoaded() || !chunk.hasBlocks()) {
@@ -65,7 +63,7 @@ public class OptimizedChunkRenderer extends ChunkRenderer {
         // Calculate the render distance and cull if too far
         int renderDistance = MinecraftClient.getInstance().options.viewDistance;
         if (Math.abs(chunkPos.x - camera.getBlockPos().getX() >> 4) > renderDistance ||
-            Math.abs(chunkPos.z - camera.getBlockPos().getZ() >> 4) > renderDistance) {
+                Math.abs(chunkPos.z - camera.getBlockPos().getZ() >> 4) > renderDistance) {
             return;
         }
 
@@ -94,13 +92,13 @@ public class OptimizedChunkRenderer extends ChunkRenderer {
                         BlockPos blockPos = new BlockPos(x, y, z);
 
                         // Get the block state
-                        @Nullable BlockState blockState = chunk.getBlockState(blockPos);
+                        net.minecraft.block.BlockState blockState = chunk.getBlockState(blockPos);
 
                         // Render the block if it is visible and matches the render layer
                         if (blockState != null && blockRenderManager.isRenderable(blockState, blockPos, chunk) &&
-                            blockState.getRenderLayer() == renderLayer) {
+                                blockState.getRenderLayer() == renderLayer) {
                             renderBlock(blockState, blockPos, chunk, vertexConsumerProvider, bufferBuilders[layerIndex],
-                                matrixStacks[layerIndex], layerIndex);
+                                    matrixStacks[layerIndex], layerIndex);
                         }
                     }
                 }
@@ -112,14 +110,14 @@ public class OptimizedChunkRenderer extends ChunkRenderer {
                 RenderSystem.multMatrix(matrixStacks[layerIndex].peek().getModel());
 
                 vertexConsumerProvider.getBuffer(renderLayer).draw(bufferBuilders[layerIndex].getVertexData(),
-                    bufferBuilders[layerIndex].getVertexCount());
+                        bufferBuilders[layerIndex].getVertexCount());
 
                 RenderSystem.popMatrix();
             }
         }
     }
 
-    private void renderBlock(BlockState blockState, BlockPos blockPos, Chunk chunk,
+    private void renderBlock(net.minecraft.block.BlockState blockState, BlockPos blockPos, Chunk chunk,
                              VertexConsumerProvider vertexConsumerProvider, BufferBuilder bufferBuilder,
                              MatrixStack matrixStack, int layerIndex) {
         // Apply the block state's model transformation
@@ -127,11 +125,10 @@ public class OptimizedChunkRenderer extends ChunkRenderer {
 
         // Render the block with the buffer builder
         blockRenderManager.getModelRenderer().render(blockState, blockPos, chunk, matrixStack, bufferBuilder,
-            vertexConsumerProvider, false, MinecraftClient.getInstance().getRandom(), 0, blockState.getEffectiveTint(
-                chunk.getWorld(), blockPos, blockState.getBlock()));
+                vertexConsumerProvider, false, MinecraftClient.getInstance().getRandom(), 0, blockState.getEffectiveTint(
+                        chunk.getWorld(), blockPos, blockState.getBlock()));
     }
 
-    @Override
     protected int getPackedLight(BlockView world, BlockPos blockPos) {
         if (blockPos.getY() >= 0 && blockPos.getY() < 256) {
             return world.getChunk(blockPos).getPackedLight(blockPos);
@@ -139,14 +136,12 @@ public class OptimizedChunkRenderer extends ChunkRenderer {
         return 0x00ffffff;
     }
 
-    @Override
     protected void setBlockVisibility(Chunk chunk, Direction direction, boolean visible) {
         if (chunk instanceof WorldChunk) {
             ((WorldChunk) chunk).setBlockVisibility(direction, visible);
         }
     }
 
-    @Override
     protected boolean isBlockVisible(Chunk chunk, Direction direction) {
         if (chunk instanceof WorldChunk) {
             return ((WorldChunk) chunk).isBlockVisible(direction);
