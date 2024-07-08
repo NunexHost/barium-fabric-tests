@@ -31,7 +31,7 @@ public class OptimizedChunkRenderer {
     private final Long2ObjectMap<ChunkData> chunkDataMap = new Long2ObjectOpenHashMap<>();
 
     // Buffer for vertex data
-    private final VertexBuffers vertexBuffer = new VertexBuffers(VertexBuffers.Usage.STATIC); 
+    private final VertexBuffer vertexBuffer = new VertexBuffer; 
 
     // Reuse for efficiency
     private final MatrixStack matrixStack = new MatrixStack();
