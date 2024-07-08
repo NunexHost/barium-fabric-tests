@@ -1,5 +1,7 @@
 package pedrixzz.barium.client.render.chunk;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
@@ -9,6 +11,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.BlockView;
 
+@Environment(EnvType.CLIENT)
 public class ChunkRenderer {
 
     private final ChunkPos chunkPos;
@@ -23,7 +26,7 @@ public class ChunkRenderer {
 
     public void render(MatrixStack matrixStack, float tickDelta) {
         // Otimização 1: Renderizar apenas chunks visíveis
-        if (!MinecraftClient.getInstance().chunkManager.isChunkVisible(chunkPos)) {
+        if (!MinecraftClient.getInstance().worldRenderer.getChunkRenderer().isChunkVisible(chunkPos)) {
             return;
         }
 
@@ -35,7 +38,7 @@ public class ChunkRenderer {
                     BlockState blockState = world.getBlockState(blockPos);
 
                     // Otimização 3: Usar RenderLayer.SOLID para blocos opacos
-                    if (blockState.isOpaque() && blockState.getRenderLayer() == RenderLayer.SOLID) {
+                    if (blockState.isOpaque() && blockState.getRendering() == RenderLayer.SOLID) {
                         worldRenderer.renderBlock(blockState, blockPos, matrixStack, tickDelta);
                     }
                 }
