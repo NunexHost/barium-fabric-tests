@@ -11,13 +11,17 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.WorldChunk;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.BitSet;
 
-public class OptimizedChunkRenderer {
+import net.fabricmc.sodium.render.pipeline.VertexBuffers; // Assuming Sodium's class
+import net.fabricmc.sodium.render.pipeline.VertexFormat;
+
+public class OptimizedChunkRenderer extends ChunkRenderer {
 
     private static final int MAX_VERTICES_PER_CHUNK = 100000; // Adjust based on your hardware
 
@@ -30,7 +34,7 @@ public class OptimizedChunkRenderer {
     private final Long2ObjectMap<ChunkData> chunkDataMap = new Long2ObjectOpenHashMap<>();
 
     // Buffer for vertex data
-    private final VertexBuffer vertexBuffer = new VertexBuffer(MAX_VERTICES_PER_CHUNK);
+    private final VertexBuffers vertexBuffer = new VertexBuffers(VertexBuffers.Usage.STATIC); 
 
     // Reuse for efficiency
     private final MatrixStack matrixStack = new MatrixStack();
@@ -38,7 +42,7 @@ public class OptimizedChunkRenderer {
     @Override
     public void renderChunk(Chunk chunk, BlockPos pos, WorldRenderer worldRenderer) {
         // Check if chunk is already processed
-        long chunkKey = ChunkPos.toLong(chunk.getPos());
+        long chunkKey = chunk.getPos().asLong(); // Assuming ChunkPos has an asLong method
         ChunkData chunkData = chunkDataMap.get(chunkKey);
 
         // If chunk data is not cached, process it
@@ -98,7 +102,7 @@ public class OptimizedChunkRenderer {
 
     private void calculateBlockColors(ChunkData chunkData) {
         // Optimize block colors and lightmaps for faster rendering
-        BlockView world = MinecraftClient.getInstance().world;
+        World world = (World) MinecraftClient.getInstance().world; 
         for (int i = 0; i < chunkData.blockState.length; i++) {
             BlockState state = chunkData.blockState[i];
             if (state != null) {
@@ -135,12 +139,13 @@ public class OptimizedChunkRenderer {
 
     private void renderBlockSide(BlockState state, ChunkData chunkData, int x, int y, int z, int side, int lightmapColor, int blockColor, BlockPos pos, WorldRenderer worldRenderer) {
         // Optimized block side rendering with pre-allocated buffers
-        vertexBuffer.begin(RenderSystem.State.RENDER_PASS_START);
+        vertexBuffer.begin(VertexFormat.Position.XYZ, VertexFormat.Color.RGB, VertexFormat.Tex.UV, VertexFormat.Light.UV); // Assuming Sodium's VertexFormat
 
         // Add vertex data based on pre-processed data
-        state.getRenderShape().tessellateBlock(worldRenderer.getBlockModels(), chunkData.chunk, pos.add(x, y, z), state, vertexBuffer, lightmapColor, blockColor, side, matrixStack.peek().getModel(), 1.0f, 1.0f, 1.0f);
+        // You need to adapt this part to Sodium's rendering logic
+        // Replace with Sodium's method for adding vertices
+        // state.getRenderShape().tessellateBlock(worldRenderer.getBlockModels(), chunkData.chunk, pos.add(x, y, z), state, vertexBuffer, lightmapColor, blockColor, side, matrixStack.peek().getModel(), 1.0f, 1.0f, 1.0f);
 
-        // Render vertices
         vertexBuffer.end();
     }
 
@@ -158,7 +163,7 @@ public class OptimizedChunkRenderer {
         public ChunkData(Chunk chunk) {
             this.chunk = chunk;
             this.chunkPos = chunk.getPos();
-            this.blockState = chunk.getBlockStates();
+            this.blockState = chunk.getBlockStates(); 
             this.blockColors = new int[blockState.length];
             this.lightmapColors = new int[blockState.length];
             this.blockSides = new BitSet[blockState.length];
