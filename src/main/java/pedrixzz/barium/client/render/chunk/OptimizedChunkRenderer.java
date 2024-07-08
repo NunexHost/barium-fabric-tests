@@ -1,4 +1,4 @@
-package net.minecraft.client.render.chunk;
+package pedrixzz.barium.client.render.chunk;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.api.EnvType;
