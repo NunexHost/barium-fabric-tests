@@ -11,6 +11,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.BlockView;
 
+import static net.minecraft.client.render.RenderLayer.SOLID; // Importando SOLID aqui, pois o acesso é privado
+
 @Environment(EnvType.CLIENT)
 public class ChunkRenderer {
 
@@ -26,7 +28,7 @@ public class ChunkRenderer {
 
     public void render(MatrixStack matrixStack, float tickDelta) {
         // Otimização 1: Renderizar apenas chunks visíveis
-        if (!MinecraftClient.getInstance().worldRenderer.getChunkRenderer().isChunkVisible(chunkPos)) {
+        if (!MinecraftClient.getInstance().worldRenderer.getChunkRenderDispatcher().getVisibleChunks().contains(chunkPos)) {
             return;
         }
 
@@ -38,7 +40,7 @@ public class ChunkRenderer {
                     BlockState blockState = world.getBlockState(blockPos);
 
                     // Otimização 3: Usar RenderLayer.SOLID para blocos opacos
-                    if (blockState.isOpaque() && blockState.getRendering() == RenderLayer.SOLID) {
+                    if (blockState.isOpaque() && MinecraftClient.getInstance().getBlockRenderManager().getRenderLayer(blockState) == SOLID) {
                         worldRenderer.renderBlock(blockState, blockPos, matrixStack, tickDelta);
                     }
                 }
