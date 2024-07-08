@@ -1,4 +1,4 @@
-package net.minecraft.client.render.chunk;
+package pedrixzz.barium.client.render.chunk;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
